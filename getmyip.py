@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- utf-8 -*-
+#
+# 获取机器的公网 IP 地址
+#
 
 import re
 import urllib2
 
 class Getmyip:
     '''
-
     '''
     def getip(self):
         try:
