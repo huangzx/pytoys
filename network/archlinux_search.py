@@ -10,7 +10,13 @@ from getUrlResponse import getUrlResponse
 VERSION = '0.1'
 
 
-def do_search(pkg, sparch='x86_64', sppkg):
+def cookSoup(url):
+    respon = getUrlResponse(url)
+    soup = BeautifulSoup(respon)
+    return soup
+
+
+def do_search(pkg):
     ''' search archlinux packages
 
     Args:
@@ -20,8 +26,7 @@ def do_search(pkg, sparch='x86_64', sppkg):
     # 获得页数, 默认为 1
     pageNum = 1
     url = 'https://www.archlinux.org/packages/?q={}'.format(pkg)
-    respon = getUrlResponse(url)
-    soup = BeautifulSoup(respon)
+    soup = cookSoup(url)
     if DEBUG:
         sys.stderr.write(soup.prettify(encoding='utf-8'))
     try:
@@ -38,8 +43,7 @@ def do_search(pkg, sparch='x86_64', sppkg):
     for num in range(1, pageNum + 1):
         if num > 1:
             url = 'https://www.archlinux.org/packages/?page={}&q={}'.format(num, pkg)
-            respon = getUrlResponse(url)
-            soup = BeautifulSoup(respon)
+            soup = cookSoup(url)
         find_pkg = []
         find_suburl = []
         for x in soup.find_all('td'):
@@ -51,23 +55,23 @@ def do_search(pkg, sparch='x86_64', sppkg):
                 print('\n')
                 continue
             print('{:<6}'.format(x)),
-    # 获得 PKGBUILD 内容
+    # 获得 PKGBUILD 等文件的内容
     print '\n'
     find_suburl = list(set(find_suburl))
     for suburl in find_suburl:
-        print suburl
         # /packages/community/i686/fcitx-ui-light/ 
         arch = suburl.split('/')[3]
         pkg = suburl.split('/')[4]
         pkgUrl = 'https://www.archlinux.org' + suburl
-        respon = getUrlResponse(pkgUrl)
-        soup = BeautifulSoup(respon)
+        soup = cookSoup(pkgUrl)
         sourceUrl = soup.find(attrs={'title': 'View source files for {}'.format(pkg)})['href']
-        print sourceUrl
         basepkg = sourceUrl.split('/')[-1]
-        print sourceUrl.split('/tree/')[0] + '/tree/' + basepkg + '/trunk/' + 'PKGBUILD'
-        #print sourceUrl.split('/tree/')[0] + '/tree/' + pkg + '/trunk/' + 'xx.install'
-        #pkgbuildUrl = sourceUrl.replace('trunk?', 'trunk/PKGBUILD?')
+        plainUrl = sourceUrl.split('/tree/')[0] + '/plain/' + basepkg + '/trunk/'
+        soup = cookSoup(plainUrl)
+        for x in soup.find_all('li'):
+            fileUrl = x.a['href']
+            if not fileUrl.endswith('/'):
+                print 'https://projects.archlinux.org' + fileUrl
 
 
 if __name__ == '__main__':
