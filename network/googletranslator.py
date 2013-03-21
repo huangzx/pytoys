@@ -52,10 +52,12 @@ if __name__ == '__main__':
     argvs = sys.argv[1:]
     if not argvs:
         argvs = ['-h']
-    desc = 'Google translator'
+    desc = 'Google translator, defaults to zh-CN -> en'
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-v', '--version', action='store_true',
                         dest='v', help='show version')
+    parser.add_argument('-r', '--reverse', action='store_true',
+                        dest='r', help='reverse default langpair, a.k.s zh-CN -> en')
     parser.add_argument('-f', '--from', nargs=1, metavar='string',
                         default='en', dest='f', help='source language')
     parser.add_argument('-t', '--to', nargs=1, metavar='string',
@@ -64,5 +66,8 @@ if __name__ == '__main__':
     args = parser.parse_args(argvs)
     if args.v:
         print VERSION
+    if args.r:
+        args.f = ['zh-CN']
+        args.t = ['en']
     for x in args.string:
         translate(x, args.f[0], args.t[0])
