@@ -52,7 +52,7 @@ if __name__ == '__main__':
     argvs = sys.argv[1:]
     if not argvs:
         argvs = ['-h']
-    desc = 'Google translator, defaults to zh-CN -> en'
+    desc = 'Google translator, defaults to en -> zh-CN'
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-v', '--version', action='store_true',
                         dest='v', help='show version')

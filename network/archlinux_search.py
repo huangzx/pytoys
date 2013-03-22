@@ -11,21 +11,21 @@ from downloadFile import downloadFile
 VERSION = '0.1'
 
 
-def do_search(pkg):
+def do_search(givenName):
     ''' search archlinux packages
 
     Args:
-      pkg: A string, pkgname
+      givenName: A string, pkgname
 
     '''
     # 获得页数, 默认为 1
     pageNum = 1
-    url = 'https://www.archlinux.org/packages/?q={}'.format(pkg)
+    url = 'https://www.archlinux.org/packages/?q={}'.format(givenName)
     soup = cookSoup(url)
     try:
         pkglist = soup.find(attrs={'class': 'pkglist-stats'}).p.text
     except AttributeError:   
-        sys.stderr.write("'{}' not found at Arch Packages.\n".format(pkg))
+        sys.stderr.write("'{}' not found at Arch Packages.\n".format(givenName))
         return 1
     print(pkglist + '\n')
     if 'Page' in pkglist:
@@ -37,7 +37,7 @@ def do_search(pkg):
     print('Arch    Repo    Name    Version    Description    Last Updated\n')
     for num in range(1, pageNum + 1):
         if num > 1:
-            url = 'https://www.archlinux.org/packages/?page={}&q={}'.format(num, pkg)
+            url = 'https://www.archlinux.org/packages/?page={}&q={}'.format(num, givenName)
             soup = cookSoup(url)
         find_pkg = []
         find_suburl = []
@@ -68,25 +68,27 @@ def do_search(pkg):
         find_sourceurl = []
         for suburl in find_suburl:
             arch = suburl.split('/')[3]
-            pkg = suburl.split('/')[4]
+            name = suburl.split('/')[4]
             pkgUrl = 'https://www.archlinux.org' + suburl
             soup = cookSoup(pkgUrl)
-            sourceUrl = soup.find(attrs={'title': 'View source files for {}'.format(pkg)})['href']
+            sourceUrl = soup.find(attrs={'title': 'View source files for {}'.format(name)})['href']
             if not sourceUrl in find_sourceurl:
                 find_sourceurl.append(sourceUrl)
-        for x in find_sourceurl:
-            basepkg = x.split('/')[-1]
-            plainUrl = x.split('/tree/')[0] + '/plain/' + basepkg + '/trunk/'
-            print "Fetching from {}".format(plainUrl)
-            soup = cookSoup(plainUrl)
-            for x in soup.find_all('li'):
-                fileUrl = x.a['href']
-                if not fileUrl.endswith('/'):
-                    # 每一个文件的真实 URL
-                    fileUrl = 'https://projects.archlinux.org' + fileUrl
-                    fileSave = fileUrl.split('/')[-1]
-                    print 'Get: {}'.format(fileSave)   
-                    downloadFile(fileUrl, fileSave, needReport=False)
+                basepkg = sourceUrl.split('/')[-1]
+                plainUrl = sourceUrl.split('/tree/')[0] + '/plain/' + basepkg + '/trunk/'
+                print "Fetching from {}".format(plainUrl)
+                soup = cookSoup(plainUrl)
+                for x in soup.find_all('li'):
+                    fileUrl = x.a['href']
+                    if not fileUrl.endswith('/'):
+                        # 每一个文件的真实 URL
+                        fileUrl = 'https://projects.archlinux.org' + fileUrl
+                        fileSave = fileUrl.split('/')[-1]
+                        print 'Get: {}'.format(fileSave)   
+                        downloadFile(fileUrl, fileSave, needReport=False)
+                # 如果要求严格匹配软件包名
+                if STRICT and (basepkg == givenName):
+                    break
 
 
 if __name__ == '__main__':
@@ -96,21 +98,24 @@ if __name__ == '__main__':
     desc = 'Search package in https://www.archlinux.org/packages.'
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-v', '--version', action='store_true',
-                        dest='v', help='show version')
+                        dest='v', help='displays the version number')
     parser.add_argument('-f', '--fetch', action='store_true',
-                        dest='f', help='fetch PKGBUILD and so on files')
+                        dest='f', help='download PKGBUILD and other related documents')
+    parser.add_argument('-s', '--strict', action='store_true',
+                        dest='s', help='download strictly match the package name')
     parser.add_argument('-d', '--dir', nargs=1, metavar='dir',
-                        dest='d', help='fetch file to this directory')
-    parser.add_argument('-s', '--search', nargs='*', metavar='pkg',
-                        dest='s', help='search pkgname')
+                        dest='d', help='download directory')
+    parser.add_argument('pkg', nargs='*', help='search the package name')
     args = parser.parse_args(argvs)
     if args.v:
         print(VERSION)
-    SAVEDIR = FETCH = False
+    SAVEDIR = FETCH = STRICT = False
     if args.f:
         FETCH = True
         if args.d:
             SAVEDIR = args.d[0]
-    if args.s:
-        for pkg in args.s:
-            do_search(pkg)
+        if args.s:
+            STRICT = True
+    if args.pkg:
+        for x in args.pkg:
+            do_search(x)
