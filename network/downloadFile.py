@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-#------------------------------------------------------------------------------
 
 import urllib
 
@@ -25,21 +24,21 @@ def downloadFile(fileUrl, fileToSave, needReport=False):
         if fileUrl:
             downloadingFile = fileUrl
             if needReport:
-                urllib.urlretrieve(fileUrl, fileToSave, reportHook);
+                urllib.urlretrieve(fileUrl, fileToSave, reportHook)
             else:
-                urllib.urlretrieve(fileUrl, fileToSave);
+                urllib.urlretrieve(fileUrl, fileToSave)
             isDownOK = True
         else:
             print "Input download file url is NULL"
     except urllib.ContentTooShortError(msg):
-        isDownOK = False;
+        isDownOK = False
     except:
-        isDownOK = False;
-    return isDownOK;
+        isDownOK = False
+    return isDownOK
 
 
 if __name__ == '__main__':
-    dstPicFile = 'test.jpg'
-    curUrl = 'http://img2.cache.netease.com/photo/0001/2013-03-19/8QA0UTSV3R710001.jpg'
+    dstPicFile = 'PKGBUILD'
+    curUrl = 'https://projects.archlinux.org/svntogit/community.git/plain/fcitx-googlepinyin/trunk/PKGBUILD'
     if dstPicFile and curUrl:
-        downloadFile(curUrl, dstPicFile, needReport=True)
+        downloadFile(curUrl, dstPicFile)
