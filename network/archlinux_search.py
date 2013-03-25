@@ -75,6 +75,10 @@ def do_search(givenName):
             if not sourceUrl in find_sourceurl:
                 find_sourceurl.append(sourceUrl)
                 basepkg = sourceUrl.split('/')[-1]
+                # 如果要求严格匹配软件包名
+                if STRICT:
+                    if basepkg != givenName:
+                        continue
                 plainUrl = sourceUrl.split('/tree/')[0] + '/plain/' + basepkg + '/trunk/'
                 print "Fetching from {}".format(plainUrl)
                 soup = cookSoup(plainUrl)
@@ -86,9 +90,6 @@ def do_search(givenName):
                         fileSave = fileUrl.split('/')[-1]
                         print 'Get: {}'.format(fileSave)   
                         downloadFile(fileUrl, fileSave, needReport=False)
-                # 如果要求严格匹配软件包名
-                if STRICT and (basepkg == givenName):
-                    break
 
 
 if __name__ == '__main__':

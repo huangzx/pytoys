@@ -18,7 +18,6 @@ def getUrlResponse(url, postDict={}, headerDict={}, timeout=0, useGzip=False):
     
     Returns:
       urllib2.urlopen object      
-    
 
     To use:
      >>>import ybsutils
@@ -28,14 +27,12 @@ def getUrlResponse(url, postDict={}, headerDict={}, timeout=0, useGzip=False):
     '''
     # makesure url is string, not unicode, otherwise urllib2.urlopen will error
     url = str(url)
-    
     if postDict:
         postData = urllib.urlencode(postDict)
         req = urllib2.Request(url, postData)
         req.add_header('Content-Type', 'application/x-www-form-urlencoded')
     else:
         req = urllib2.Request(url)
-    
     defHeaderDict = {
         'User-Agent': ['userAgentIE9'], 
         'Cache-Control': 'no-cache',
@@ -49,11 +46,8 @@ def getUrlResponse(url, postDict={}, headerDict={}, timeout=0, useGzip=False):
     if headerDict:
         for key in headerDict.keys():
             req.add_header(key, headerDict[key])
-   
-    
     if timeout > 0:
         respon = urllib2.urlopen(req, timeout=timeout)
     else:
         respon = urllib2.urlopen(req);
-    
     return respon
