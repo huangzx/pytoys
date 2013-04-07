@@ -4,20 +4,30 @@
 
 import sys
 from bs4 import BeautifulSoup
-from getUrlResponse import getUrlResponse
+from get_url_response import get_url_response
 
 VERSION = '0.1'
 
 
-def cookSoup(url):
-    respon = getUrlResponse(url)
+def cook_soup(url):
+    '''
+
+    '''
+    respon = get_url_response(url)
     soup = BeautifulSoup(respon)
     return soup
 
 
-if __name__ == '__main__':
+def main():
+    '''
+
+    '''
     if len(sys.argv) < 2:
         sys.exit("Provide url")
     url = sys.argv[1]
-    soup = cookSoup(url)
+    soup = cook_soup(url)
     print soup.prettify(encoding='utf-8')
+
+
+if __name__ == '__main__':
+    main()

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
+#
+# Author: Zhongxin Huang <huangzhongxin@ivali.com>
+#
 
 import sys
 import urllib
@@ -48,11 +51,12 @@ def translate(text, source, target):
     htmlparser.close()
 
 
-if __name__ == '__main__':
+def main():
     argvs = sys.argv[1:]
     if not argvs:
         argvs = ['-h']
-    desc = 'Google translator, defaults to en -> zh-CN'
+    
+    desc = 'Google translator cli, defaults to en -> zh-CN'
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-v', '--version', action='store_true',
                         dest='v', help='show version')
@@ -64,10 +68,18 @@ if __name__ == '__main__':
                         default='zh-CN', dest='t', help='target language')
     parser.add_argument('string', nargs='*', help='given string')
     args = parser.parse_args(argvs)
+    
     if args.v:
-        print VERSION
+        print(VERSION)
+        sys.exit()
+
     if args.r:
         args.f = ['zh-CN']
         args.t = ['en']
+    
     for x in args.string:
         translate(x, args.f[0], args.t[0])
+
+
+if __name__ == '__main__':
+    main()
