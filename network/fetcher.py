@@ -9,8 +9,8 @@ import urllib
 import urllib2
 
 
-def get_url_response(url, post_dict={}, header_dict={}, timeout=0, use_gzip=False):
-    ''' 获得 URL 地址的响应 
+def fetcher(url, post_dict={}, header_dict={}, timeout=0, use_gzip=False):
+    ''' fetch url 
     
     Args:
      url: A string
@@ -23,8 +23,8 @@ def get_url_response(url, post_dict={}, header_dict={}, timeout=0, use_gzip=Fals
       urllib2.urlopen object      
 
     To use:
-     >>>from get_url_response import get_url_response
-     >>>respo = get_url_response(url, post_dict={}, header_dict={}, timeout=0, use_gzip=False)
+     >>>from fetcher import fetcher
+     >>>respo = fetcher(url, post_dict={}, header_dict={}, timeout=0, use_gzip=False)
      >>>respohtml = respo.read()
     
     '''
@@ -63,7 +63,7 @@ def main():
     if len(sys.argv) < 2:
         sys.exit("Provide url")
     url = sys.argv[1]
-    respon = get_url_response(url)
+    respon = fetcher(url)
     print(respon)
 
 

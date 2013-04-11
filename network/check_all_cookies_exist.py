@@ -33,7 +33,7 @@ if __name__ == '__main__':
         'password'  : password,
         'mem_pass'  : 'on',
     };
-    resp = get_url_response(login_baidu_url, post_dict)
+    resp = fetcher(login_baidu_url, post_dict)
     # check whether the cookie is OK
     cookie_name_list = ["USERID", "PTOKEN", "STOKEN"]
     login_ok = check_all_cookies_exist(cookie_name_list, g_val['cj'])

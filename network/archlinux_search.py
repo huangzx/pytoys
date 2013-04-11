@@ -9,8 +9,14 @@ import os
 import argparse
 from cook_soup import cook_soup
 from download_file import download_file
+import time
 
 VERSION = '0.1'
+SAVEDIR = FETCH = STRICT = VERBOSE = False
+
+
+def time_now():
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
 
 
 def do_search(given_name):
@@ -23,7 +29,11 @@ def do_search(given_name):
     # 获得页数, 默认为 1
     page_num = 1
     url = 'https://www.archlinux.org/packages/?q={}'.format(given_name)
+    if VERBOSE:
+        print('Verbose: {} start fetch {}'.format(time_now(), url))
     soup = cook_soup(url)
+    if VERBOSE:
+        print('Verbose: {} finished'.format(time_now()))
     try:
         pkglist = soup.find(attrs={'class': 'pkglist-stats'}).p.text
     except AttributeError:
@@ -40,7 +50,11 @@ def do_search(given_name):
     for num in range(1, page_num + 1):
         if num > 1:
             url = 'https://www.archlinux.org/packages/?page={}&q={}'.format(num, given_name)
+            if VERBOSE:
+                print('Verbose: {} start fetch {}'.format(time_now(), url))
             soup = cook_soup(url)
+            if VERBOSE:
+                print('Verbose: {} finished'.format(time_now()))
         found_pkg = []
         found_sub_url = []
         for x in soup.find_all('td'):
@@ -63,7 +77,11 @@ def do_search(given_name):
         #arch = sub_url.split('/')[3]
         name = sub_url.split('/')[4]
         pkg_url = 'https://www.archlinux.org' + sub_url
+        if VERBOSE:
+            print('Verbose: {} start fetch {}'.format(time_now(), pkg_url))
         soup = cook_soup(pkg_url)
+        if VERBOSE:
+            print('Verbose: {} finished'.format(time_now()))
         source_url = soup.find(attrs={'title': 'View source files for {}'.format(name)})['href']
         if not source_url in found_source_url:
             found_source_url.append(source_url)
@@ -82,7 +100,11 @@ def do_search(given_name):
             plain_url = source_url.split('/tree/')[0] + '/plain/' + basepkg + '/trunk/'
             print "Fetching from {}".format(plain_url)
             print 'Download to {}'.format(path_to_save)
+            if VERBOSE:
+                print('Verbose: {} start fetch {}'.format(time_now(), plain_url))
             soup = cook_soup(plain_url)
+            if VERBOSE:
+                print('Verbose: {} finished'.format(time_now()))
             for x in soup.find_all('li'):
                 file_url = x.a['href']
                 if not file_url.endswith('/'):
@@ -90,13 +112,16 @@ def do_search(given_name):
                     file_url = 'https://projects.archlinux.org' + file_url
                     file_save = file_url.split('/')[-1]
                     print 'Get: {}'.format(file_save)
-                    download_file(file_url, file_save, needs_report=False)
+                    if VERBOSE:
+                        download_file(file_url, file_save, needs_report=False)
+                    else:
+                        download_file(file_url, file_save, needs_report=True)
+                        
             print('\n')
             if STRICT and (basepkg == given_name):
                     break
 
-
-if __name__ == '__main__':
+def main():
     argvs = sys.argv[1:]
     if not argvs:
         argvs = ['-h']
@@ -106,28 +131,40 @@ if __name__ == '__main__':
             'a.k.a https://www.archlinux.org/packages.'
     )
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('-v', '--version', action='store_true', dest='v', 
+    parser.add_argument('-V', '--version', action='store_true', dest='V', 
                         help='show the version number and exit')
+    parser.add_argument('-v', '--verbose', action='store_true', dest='v', 
+                        help='enable verbose mode')
     parser.add_argument('-f', '--fetch', action='store_true', dest='f', 
                         help='download PKGBUILD and other related files')
-    parser.add_argument('-s', '--strict', action='store_true', dest='s', 
-                        help='download strictly match the package name')
+    parser.add_argument('-s', '--restrict', action='store_true', dest='s', 
+                        help='download match the package name restrictly')
     parser.add_argument('-d', '--dir', nargs=1, metavar='dir', dest='d', 
                         help="download directory, defaults to '/tmp'")
     parser.add_argument('pkg', nargs='*', help='search query')
     args = parser.parse_args(argvs)
     
-    if args.v:
+    if args.V:
         print(VERSION)
-    SAVEDIR = FETCH = STRICT = False
     
+    if args.v:
+        global VERBOSE
+        VERBOSE = True
+
     if args.f:
+        global FETCH
         FETCH = True
         if args.d:
+            global SAVEDIR
             SAVEDIR = args.d[0]
         if args.s:
+            global STRICT
             STRICT = True
     
     if args.pkg:
         for x in args.pkg:
             do_search(x)
+
+
+if __name__ == '__main__':
+    main()

@@ -4,7 +4,7 @@
 
 import sys
 from bs4 import BeautifulSoup
-from get_url_response import get_url_response
+from fetcher import fetcher
 
 VERSION = '0.1'
 
@@ -13,7 +13,7 @@ def cook_soup(url):
     '''
 
     '''
-    respon = get_url_response(url)
+    respon = fetcher(url)
     soup = BeautifulSoup(respon)
     return soup
 
