@@ -3,7 +3,7 @@
 #
 
 import urllib2
-from threading import Thread,Lock
+from threading import Thread, Lock
 from Queue import Queue
 import time
  
@@ -31,7 +31,7 @@ class Fetcher:
     def taskleft(self):
         return self.q_req.qsize() + self.q_ans.qsize() + self.running
  
-    def push(self,req):
+    def push(self, req):
         self.q_req.put(req)
  
     def pop(self):
@@ -54,10 +54,10 @@ class Fetcher:
             time.sleep(0.1) # don't spam
  
 if __name__ == "__main__":
-    links = [ 'http://www.verycd.com/topics/%d/'%i for i in range(5420,5430) ]
+    links = ['http://www.verycd.com/topics/%d/'%i for i in range(5420,5430)]
     f = Fetcher(threads=10)
     for url in links:
         f.push(url)
     while f.taskleft():
-        url,content = f.pop()
-        print url,len(content)
+        url, content = f.pop()
+        print url, len(content)

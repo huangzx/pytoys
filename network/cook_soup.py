@@ -9,13 +9,17 @@ from fetcher import fetcher
 VERSION = '0.1'
 
 
-def cook_soup(url):
+class CookSoup(object):
     '''
 
     '''
-    respon = fetcher(url)
-    soup = BeautifulSoup(respon)
-    return soup
+    def __init__(self):
+        pass
+    
+    def cook(self, url):
+        respon = fetcher(url)
+        soup = BeautifulSoup(respon)
+        return soup
 
 
 def main():
@@ -25,7 +29,8 @@ def main():
     if len(sys.argv) < 2:
         sys.exit("Provide url")
     url = sys.argv[1]
-    soup = cook_soup(url)
+    cook_soup = CookSoup()
+    soup = cook_soup.cook(url)
     print soup.prettify(encoding='utf-8')
 
 

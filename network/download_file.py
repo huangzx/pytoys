@@ -32,7 +32,7 @@ def download_file(file_url, file_to_save, needs_report=False):
             is_download_ok = True
         else:
             print "Input download file url is NULL"
-    except urllib.ContentTooShortError(msg):
+    except urllib.ContentTooShortError:
         is_download_ok = False
     except:
         is_download_ok = False

@@ -7,16 +7,72 @@
 import sys
 import os
 import argparse
-from cook_soup import cook_soup
-from download_file import download_file
 import time
+from threading import Thread, Lock
+from Queue import Queue
+from cook_soup import CookSoup
+from download_file import download_file
 
 VERSION = '0.1'
 SAVEDIR = FETCH = STRICT = VERBOSE = False
 
 
-def time_now():
+def what_time_now():
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+
+
+class MTDownload(object):
+    ''' 多线程下载多个文件
+    
+    '''
+    def __init__(self, threads):
+        self.threads = threads
+        self.lock = Lock()
+        # 任务队列
+        self.q_job = Queue()
+        # 已完成任务队列
+        self.q_done = Queue()
+        for i in range(threads):
+            t = Thread(target=self.download)
+            t.daemon = True
+            t.start()
+        self.running = 0
+
+    def __del__(self):
+        self.q_job.join()
+        self.q_done.join()
+    
+    def task_left(self):
+        return self.q_job.qsize() + self.q_done.qsize() + self.running
+    
+    def push(self, jobs):
+        for job in jobs:
+            self.q_job.put(job)
+    
+    def pop(self):
+        return self.q_done.get()
+
+    def download(self):
+        '''
+        '''
+        while True:
+            job = self.q_job.get()
+            if self.lock:
+                self.running += 1
+            try:
+                if VERBOSE:
+                    # job[0] - url
+                    # job[1] - file to save
+                    res = download_file(job[0], job[1], needs_report=True)
+                else:
+                    res = download_file(job[0], job[1], needs_report=False)
+            except Exception:
+                pass
+            self.q_done.put((job, res))
+            if self.lock:
+                self.running -= 1
+            self.q_job.task_done()
+            print(job[1])
 
 
 def do_search(given_name):
@@ -26,19 +82,24 @@ def do_search(given_name):
       given_name: A string, pkgname
 
     '''
+    cook_soup = CookSoup()
+
     # 获得页数, 默认为 1
     page_num = 1
     url = 'https://www.archlinux.org/packages/?q={}'.format(given_name)
+    
     if VERBOSE:
-        print('Verbose: {} start fetch {}'.format(time_now(), url))
-    soup = cook_soup(url)
+        print('Verbose: {} start fetch {}'.format(what_time_now(), url))
+    soup = cook_soup.cook(url)
     if VERBOSE:
-        print('Verbose: {} finished'.format(time_now()))
+        print('Verbose: {} finished'.format(what_time_now()))
+    
     try:
         pkglist = soup.find(attrs={'class': 'pkglist-stats'}).p.text
     except AttributeError:
         sys.stderr.write("'{}' not found at Arch Packages.\n".format(given_name))
         return 1
+    
     print(pkglist + '\n')
     if 'Page' in pkglist:
         # 原始数据是：'144 packages found. Page 1 of 2.'
@@ -51,10 +112,10 @@ def do_search(given_name):
         if num > 1:
             url = 'https://www.archlinux.org/packages/?page={}&q={}'.format(num, given_name)
             if VERBOSE:
-                print('Verbose: {} start fetch {}'.format(time_now(), url))
-            soup = cook_soup(url)
+                print('Verbose: {} start fetch {}'.format(what_time_now(), url))
+            soup = cook_soup.cook(url)
             if VERBOSE:
-                print('Verbose: {} finished'.format(time_now()))
+                print('Verbose: {} finished'.format(what_time_now()))
         found_pkg = []
         found_sub_url = []
         for x in soup.find_all('td'):
@@ -72,23 +133,28 @@ def do_search(given_name):
     #
     if not FETCH:
         return
+    
     found_source_url = []
     for sub_url in found_sub_url:
         #arch = sub_url.split('/')[3]
         name = sub_url.split('/')[4]
         pkg_url = 'https://www.archlinux.org' + sub_url
+        
         if VERBOSE:
-            print('Verbose: {} start fetch {}'.format(time_now(), pkg_url))
-        soup = cook_soup(pkg_url)
+            print('Verbose: {} start fetch {}'.format(what_time_now(), pkg_url))
+        soup = cook_soup.cook(pkg_url)
         if VERBOSE:
-            print('Verbose: {} finished'.format(time_now()))
+            print('Verbose: {} finished'.format(what_time_now()))
+        
         source_url = soup.find(attrs={'title': 'View source files for {}'.format(name)})['href']
         if not source_url in found_source_url:
             found_source_url.append(source_url)
             basepkg = source_url.split('/')[-1]
+            
             # 如果要求严格匹配软件包名
             if STRICT and (basepkg != given_name):
                 continue
+            
             # 如果指定了下载目录
             path_to_save = '/tmp'
             if SAVEDIR:
@@ -97,39 +163,47 @@ def do_search(given_name):
             if not os.path.exists(path_to_save):
                 os.makedirs(path_to_save)
             os.chdir(path_to_save)
+            
             plain_url = source_url.split('/tree/')[0] + '/plain/' + basepkg + '/trunk/'
             print "Fetching from {}".format(plain_url)
-            print 'Download to {}'.format(path_to_save)
+            
             if VERBOSE:
-                print('Verbose: {} start fetch {}'.format(time_now(), plain_url))
-            soup = cook_soup(plain_url)
+                print('Verbose: {} start fetch {}'.format(what_time_now(), plain_url))
+            soup = cook_soup.cook(plain_url)
             if VERBOSE:
-                print('Verbose: {} finished'.format(time_now()))
+                print('Verbose: {} finished'.format(what_time_now()))
+            
+            file_urls = []
             for x in soup.find_all('li'):
                 file_url = x.a['href']
                 if not file_url.endswith('/'):
                     # 每一个文件的真实 URL
                     file_url = 'https://projects.archlinux.org' + file_url
-                    file_save = file_url.split('/')[-1]
-                    print 'Get: {}'.format(file_save)
-                    if VERBOSE:
-                        download_file(file_url, file_save, needs_report=False)
-                    else:
-                        download_file(file_url, file_save, needs_report=True)
-                        
+                    if not file_url in file_urls:
+                        file_save = file_url.split('/')[-1]
+                        file_urls.append((file_url, file_save))
+            
+            files_num = len(file_urls)
+            print 'Download {} files to {}'.format(files_num, path_to_save)
+            # 多线程下载, 每个文件一个线程
+            mtd = MTDownload(threads=len(file_urls))
+            # 将所有任务放入队列
+            mtd.push(file_urls)
+            while mtd.task_left():
+                # 将已完成任务移出队列
+                mtd.pop()
+            
             print('\n')
             if STRICT and (basepkg == given_name):
                     break
+
 
 def main():
     argvs = sys.argv[1:]
     if not argvs:
         argvs = ['-h']
     
-    desc = (
-            'Search package in Arch Linux package database, '
-            'a.k.a https://www.archlinux.org/packages.'
-    )
+    desc = 'Search package in Arch Linux, a.k.a https://www.archlinux.org/packages.'
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-V', '--version', action='store_true', dest='V', 
                         help='show the version number and exit')
